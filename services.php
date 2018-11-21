@@ -38,7 +38,7 @@ function hooramat_sale_services(){
           return wp_redirect( admin_url( "/options-general.php?page=hooramat_sale_services&group={$_GET['group']}" ), 301 );
         }
         return hooramat_sale_service_form([]);
-  }else if (isset($_GET['edit'])){
+  }else if (!empty($_GET['group']) && !empty($_GET['service'])){
         global $wpdb;
         if(!empty($_POST['name']) && !empty($_POST['description']) ){
           $wpdb->update(
@@ -48,15 +48,14 @@ function hooramat_sale_services(){
               'description' => $_POST['description'],
               'total' => $_POST['total'],
               'price' => $_POST['price'],
-              'start' => $_POST['startdate'] . ' ' . $_POST['starttime'],
-              'finish' => $_POST['finishdate'] . ' ' . $_POST['finishtime']
+              'sale' => $_POST['sale'],
             ),
-            array ('id' => $_GET['edit'])
+            array ('id' => $_GET['service'])
           );
-          return wp_redirect( admin_url( '/options-general.php?page=hooramat_sale_services' ), 301 );
+          return wp_redirect( admin_url( "/options-general.php?page=hooramat_sale_services&group={$_GET['group']}" ), 301 );
         }
-        return hooramat_sale_service_form( $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where id = {$_GET['edit']}", ARRAY_A ) );
-  } else if (isset($_GET['group'])) {
+        return hooramat_sale_service_form( $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where id = {$_GET['service']}", ARRAY_A ) );
+  } else if (!empty($_GET['group'])) {
         return hooramat_sale_group();
   } else {
         return hooramat_sale_groups();
@@ -233,8 +232,8 @@ function hooramat_sale_service_form($data){
       <label for="price">قیمت: </label>
       <input type="text" id="price" name="price" value="<?= $_POST['price'] ?? $data['price'] ?? '' ?>"><br>
 
-      <label for="price">قیمت: </label>
-      <input type="text" id="price" name="price" value="<?= $_POST['price'] ?? $data['price'] ?? '' ?>"><br>
+      <label for="sale">حراج: </label>
+      <input type="text" id="sale" name="sale" value="<?= $_POST['sale'] ?? $data['sale'] ?? '' ?>"><br>
 
       <br>
       <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large" time="<?= $t ?>">
@@ -242,6 +241,4 @@ function hooramat_sale_service_form($data){
   </div>
   <?php
 }
-
-
 ?>
