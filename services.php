@@ -7,6 +7,7 @@ function hooramat_sale_services_menu() {
 function hooramat_sale_services(){
 
   if(!empty($_GET['create']) && $_GET['create'] == 'group'){
+        // CREATE GROUP
         if(!empty($_POST['name']) && !empty($_POST['description']) ){
           global $wpdb;
           $wpdb->insert(
@@ -22,6 +23,7 @@ function hooramat_sale_services(){
         }
         return hooramat_sale_group_create([]);
   }else if(!empty($_GET['create']) && $_GET['create'] == 'service'){
+        // CREATE SERVICE
         if(!empty($_POST['name']) && !empty($_POST['description']) ){
           global $wpdb;
           $wpdb->insert(
@@ -39,6 +41,7 @@ function hooramat_sale_services(){
         }
         return hooramat_sale_service_form([]);
   }else if (!empty($_GET['group']) && !empty($_GET['service'])){
+        // UPDATE SERVICE
         global $wpdb;
         if(!empty($_POST['name']) && !empty($_POST['description']) ){
           $wpdb->update(
@@ -56,6 +59,21 @@ function hooramat_sale_services(){
         }
         return hooramat_sale_service_form( $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where id = {$_GET['service']}", ARRAY_A ) );
   } else if (!empty($_GET['group'])) {
+        // UPDATE GROUP
+        if(!empty($_POST['name']) && !empty($_POST['description']) ){
+          global $wpdb;
+          $wpdb->update(
+            $wpdb->prefix . 'hooramat_sale_groups',
+            array(
+              'name' => $_POST['name'],
+              'description' => $_POST['description'],
+              'start' => $_POST['startdate'] . ' ' . $_POST['starttime'],
+              'finish' => $_POST['finishdate'] . ' ' . $_POST['finishtime']
+            ),
+            array ('id' => $_GET['group'])
+          );
+          return wp_redirect( admin_url( "/options-general.php?page=hooramat_sale_services&group={$_GET['group']}" ), 301 );
+        }
         return hooramat_sale_group();
   } else {
         return hooramat_sale_groups();

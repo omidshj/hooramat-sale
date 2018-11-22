@@ -53,6 +53,7 @@ function hooramat_sale_activation() {
     mobile varchar(255) NULL,
     area varchar(255) NULL,
     services text NULL,
+    cost mediumint(9) NULL,
     payment_time datetime NULL,
     payment_code mediumint(9) NULL,
     PRIMARY KEY (id)
