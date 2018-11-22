@@ -2,9 +2,6 @@
 function hooramat_sale_shortcode( $atts ) {
   if (empty($atts['sale'])) return 'bad request';
   if (!empty($_POST['services']) && !empty($_POST['first_name']) && !empty($_POST['last_name']) && !empty($_POST['mobile']) && !empty($_POST['area']) ) {
-    if (!empty($_POST['payment'])) {
-      hooramat_sale_payment($atts);
-    }
     hooramat_sale_preview($atts);
   }else {
     hooramat_sale_show_table($atts);
@@ -36,7 +33,7 @@ function hooramat_sale_show_table($atts){
             <td><?= $service->price ?></td>
             <td><?= $service->sale ?></td>
             <td>
-              <input class="sale-price" sale="<?= $service->sale ?>" type="checkbox" id="service<?= $service->id ?>" name="services[<?= $service->id ?>]" value=1 <?= !empty($_POST['services'][$service->id])? 'checked': '' ?>  />
+              <input class="sale-price" sale="<?= $service->sale ?>" type="checkbox" id="service<?= $service->id ?>" name="services[<?= $service->id ?>][count]" value=1 <?= !empty($_POST['services'][$service->id]['count'])? 'checked': '' ?>  />
               <label for="service<?= $service->id ?>"></label>
             </td>
           </tr>
@@ -100,6 +97,7 @@ function hooramat_sale_preview($atts){
   if (empty($group) || empty($services)) return 'bad request';
   ?>
   <form class="" method="post">
+    <input type="hidden" name="group" value="<?= $atts['sale'] ?>">
     <table>
       <thead>
         <tr>
@@ -111,7 +109,7 @@ function hooramat_sale_preview($atts){
       <tbody>
         <?php foreach ($services as $service): $cost += $service->sale; ?>
           <tr>
-            <td><?= $service->name ?><input type="hidden" name="services[<?= $service->id ?>]" value="<?= $_POST['services'][$service->id] ?>"> </td>
+            <td><?= $service->name ?><input type="hidden" name="services[<?= $service->id ?>][count]" value="<?= $_POST['services'][$service->id]['count'] ?>"> </td>
             <td><?= $service->price ?></td>
             <td><?= $service->sale ?></td>
           </tr>
@@ -145,50 +143,78 @@ function hooramat_sale_preview($atts){
   <?php
 }
 
-function hooramat_sale_payment($atts){
-  global $wpdb;
-  $wpdb->insert(
-    $wpdb->prefix . 'hooramat_sale_orders',
-    array(
-      'first_name' => $_POST['first_name'],
-      'last_name' => $_POST['last_name'],
-      'mobile' => $_POST['mobile'],
-      'area' => $_POST['area'],
-      'services' => serialize( $_POST['services'] ),
-    )
-  );
+
+add_action('template_redirect', function(){
+  if(
+    !empty($_POST['group']) &&
+    !empty($_POST['services']) &&
+    !empty($_POST['first_name']) &&
+    !empty($_POST['last_name']) &&
+    !empty($_POST['mobile']) &&
+    !empty($_POST['area']) &&
+    !empty($_POST['payment'])
+  ){
+    $requested_services = $_POST['services'];
+    global $wpdb;
+    $group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups where id = {$_POST['group']}", ARRAY_A );
+    $ids = implode(array_keys($_POST['services']), ', ');
+    $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where group_id={$_POST['group']} and id IN ({$ids})", OBJECT );
+    $cost = 0;
+
+    foreach ($services as $service) {
+      $requested_services[$service->id]['sale'] = $service->sale;
+      $requested_services[$service->id]['cost'] = $requested_services[$service->id]['count'] * $service->sale;
+      $cost += $requested_services[$service->id]['cost'];
+    }
+    // echo $cost;
+    // echo "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان";
+    // print_r($_POST);
+    // exit;
+
+    global $wpdb;
+    $wpdb->insert(
+      $wpdb->prefix . 'hooramat_sale_orders',
+      array(
+        'first_name' => $_POST['first_name'],
+        'last_name' => $_POST['last_name'],
+        'mobile' => $_POST['mobile'],
+        'area' => $_POST['area'],
+        'services' => serialize( $requested_services ),
+      )
+    );
 
 
-  $jsonData = json_encode(array(
-    'MerchantID' => '68f32bf2-ee3e-11e8-a3bb-005056a205be',
-    'Amount' => 100,
-    'CallbackURL' => 'http://www.YourSite.com/',
-    'Description'  => 'خرید تست'
-  ));
-  $ch = curl_init('https://www.zarinpal.com/pg/rest/WebGate/PaymentRequest.json');
-  curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
-  curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-  curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-    'Content-Type: application/json',
-    'Content-Length: ' . strlen($jsonData)
-  ));
-  $result = curl_exec($ch);
-  $err = curl_error($ch);
-  $result = json_decode($result, true);
-  curl_close($ch);
-  if ($err) {
-    echo "cURL Error #:" . $err;
-    } else {
-    if ($result["Status"] == 100) {
-      // echo 'Location: https://www.zarinpal.com/pg/StartPay/' . $result["Authority"];
-      ob_start();
-      header('Location: https://www.zarinpal.com/pg/StartPay/' . $result["Authority"]);
-      exit();
-    } else {
-      echo'ERR: ' . $result["Status"];
+    $jsonData = json_encode(array(
+      'MerchantID' => '68f32bf2-ee3e-11e8-a3bb-005056a205be',
+      'Amount' => $cost,
+      'CallbackURL' => get_permalink(),
+      'Description'  => "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان"
+    ));
+
+    $ch = curl_init('https://www.zarinpal.com/pg/rest/WebGate/PaymentRequest.json');
+    curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+      'Content-Type: application/json',
+      'Content-Length: ' . strlen($jsonData)
+    ));
+    $result = curl_exec($ch);
+    $err = curl_error($ch);
+    $result = json_decode($result, true);
+    curl_close($ch);
+    if ($err) {
+      echo "cURL Error #:" . $err;
+      } else {
+      if ($result["Status"] == 100) {
+        header('Location: https://www.zarinpal.com/pg/StartPay/' . $result["Authority"]);
+      } else {
+        echo'ERR: ' . $result["Status"];
+      }
     }
   }
-}
+});
+
+
 ?>
