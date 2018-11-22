@@ -2,11 +2,11 @@
 function hooramat_sale_shortcode( $atts ) {
   if (empty($atts['sale'])) return 'bad request';
   if (!empty($_GET['Authority']) && !empty($_GET['Status']) ) {
-    hooramat_sale_payment_success();
+    return hooramat_sale_payment_success();
   } else if (!empty($_POST['services']) && !empty($_POST['first_name']) && !empty($_POST['last_name']) && !empty($_POST['mobile']) && !empty($_POST['area']) ) {
-    hooramat_sale_preview($atts);
+    return hooramat_sale_preview($atts);
   }else {
-    hooramat_sale_show_table($atts);
+    return hooramat_sale_show_table($atts);
   }
 
 }
@@ -33,7 +33,7 @@ function hooramat_sale_show_table($atts){
         $minute = floor(($diff % (60*60)) / (60));
         $second = floor(($diff % 60));
       ?><br>
-      <div class="remaining-time">
+      <div class="remaining-time white-text">
         <p class="display-3 margin-0" style="text-align: center;">
           <span class="second"><?= $second;?></span><span > : </span>
           <span class="minute"><?= $minute;?></span><span > : </span>
@@ -43,34 +43,36 @@ function hooramat_sale_show_table($atts){
         </p>
       </div><br><br>
     <?php endif; ?>
-    <table>
+    <table class="bordered">
       <thead>
         <tr>
           <th>عنوان</th>
-          <th>شرح</th>
           <th>قیمت</th>
-          <th>حراج</th>
-          <?php if ($time): ?><th></th><?php endif; ?>
+          <?php if ($time): ?><th>انتخاب</th><?php endif; ?>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($services as $service): ?>
           <tr>
-            <td><?= $service->name ?></td>
-            <td><?= $service->description ?></td>
-            <td><?= $service->price ?></td>
-            <td><?= $service->sale ?></td>
+            <td><div class="title white-text"><?= $service->name ?></div> <?= $service->description ?></td>
+            <td style="padding-right:0; padding-left: 0;">
+              <div style="text-decoration: line-through;"><?= $service->price ?></div>
+              <span class="secondary-text" ><?= $service->sale ?></span>
+            </td>
             <?php if ($time): ?>
               <td>
-                <input class="sale-price" sale="<?= $service->sale ?>" type="checkbox" id="service<?= $service->id ?>" name="services[<?= $service->id ?>][count]" value=1 <?= !empty($_POST['services'][$service->id]['count'])? 'checked': '' ?>  />
-                <label for="service<?= $service->id ?>"></label>
+                <?php if ($service->total > 0): ?>
+                  <input class="sale-price" sale="<?= $service->sale ?>" type="checkbox" id="service<?= $service->id ?>" name="services[<?= $service->id ?>][count]" value=1 <?= !empty($_POST['services'][$service->id]['count'])? 'checked': '' ?>  />
+                  <label for="service<?= $service->id ?>"></label>
+                <?php else: ?>
+                  اتمام ظرفیت
+                <?php endif; ?>
               </td>
             <?php endif; ?>
           </tr>
         <?php endforeach; ?>
         <?php if ($time): ?>
           <tr>
-            <th></th>
             <th></th>
             <th>جمع</th>
             <th class="services-cost">0</th>
@@ -80,29 +82,30 @@ function hooramat_sale_show_table($atts){
     </table>
     <br><br>
     <?php if ($time): ?>
+      <br><br><br><br>
       <div class="row">
-
-        <div class="input-fieldx col s6">
-          <label class="title">نام:</label>
+        <div class="input-fieldx col s6 right-align">
+          <label class="title white-text">نام:</label>
           <input name="first_name" type="text" class="validate" value="<?= $_POST['first_name'] ?? '' ?>">
         </div>
-        <div class="input-fieldx col s6">
-          <label class="title">نام خانوادگی:</label>
+        <div class="input-fieldx col s6 right-align">
+          <label class="title white-text">نام خانوادگی:</label>
           <input name="last_name" type="text" class="validate" value="<?= $_POST['last_name'] ?? '' ?>">
         </div>
         <div class="col s12">
           <br>
         </div>
-        <div class="input-fieldx col s6">
-          <label class="title">شماره تلفن:</label>
+        <div class="input-fieldx col s6 right-align">
+          <label class="title white-text">شماره تلفن:</label>
           <input name="mobile" type="text" class="validate" value="<?= $_POST['mobile'] ?? '' ?>">
         </div>
-        <div class="input-fieldx col s6">
-          <label class="title">محدوده محل سکونت:</label>
+        <div class="input-fieldx col s6 right-align">
+          <label class="title white-text">محدوده محل سکونت:</label>
           <input name="area" type="text" class="validate" value="<?= $_POST['area'] ?? '' ?>">
         </div>
       </div>
       <input type="submit" name="" value="ثبت درخواست">
+      <br><br><br><br><br><br><br>
     <?php endif; ?>
   </form>
   <script type="text/javascript">
@@ -132,47 +135,48 @@ function hooramat_sale_preview($atts){
   ?>
   <form class="" method="post">
     <input type="hidden" name="group" value="<?= $atts['sale'] ?>">
-    <table>
+    <table class="bordered">
       <thead>
         <tr>
           <th>عنوان</th>
           <th>قیمت</th>
-          <th>حراج</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($services as $service): $cost += $service->sale; ?>
           <tr>
-            <td><?= $service->name ?><input type="hidden" name="services[<?= $service->id ?>][count]" value="<?= $_POST['services'][$service->id]['count'] ?>"> </td>
-            <td><?= $service->price ?></td>
+            <td>
+              <div class="title white-text"><?= $service->name ?></div> <?= $service->description ?>
+              <input type="hidden" name="services[<?= $service->id ?>][count]" value="<?= $_POST['services'][$service->id]['count'] ?>">
+            </td>
             <td><?= $service->sale ?></td>
           </tr>
         <?php endforeach; ?>
         <tr>
-          <th></th>
           <th>جمع</th>
           <th><?= $cost ?></th>
         </tr>
       </tbody>
     </table>
-    <br><br>
+    <br><br><br><br>
     <div class="row">
-      <p class="col s6 title">
+      <p class="col s6 title white-text">
         نام: <?= $_POST['first_name'] ?> <input type="hidden" name="first_name" value="<?= $_POST['first_name'] ?>">
       </p>
-      <p class="col s6 title">
+      <p class="col s6 title white-text">
         نام خانوادگی: <?= $_POST['last_name'] ?> <input type="hidden" name="last_name" value="<?= $_POST['last_name'] ?>">
       </p>
-      <p class="col s6 title">
+      <p class="col s6 title white-text">
         تلفن: <?= $_POST['mobile'] ?> <input type="hidden" name="mobile" value="<?= $_POST['mobile'] ?>">
       </p>
-      <p class="col s6 title">
+      <p class="col s6 title white-text">
         محدوده محل سکونت: <?= $_POST['area'] ?> <input type="hidden" name="area" value="<?= $_POST['area'] ?>">
       </p>
     </div>
     <br>
     <input type="hidden" name="payment" value="11258">
     <input type="submit" name="" value="پرداخت آنلاین">
+    <br><br><br><br><br>
   </form>
   <?php
 }
@@ -217,6 +221,14 @@ add_action('template_redirect', function(){
         'cost' => $cost
       )
     );
+    $wpdb->update(
+      $wpdb->prefix . 'hooramat_sale_orders',
+      array(
+        'code' => 2*7*14*22 * $wpdb->insert_id,
+      ),
+      array ('id' => $wpdb->insert_id)
+    );
+
 
     $jsonData = json_encode(array(
       'MerchantID' => '68f32bf2-ee3e-11e8-a3bb-005056a205be',
@@ -272,31 +284,115 @@ function hooramat_sale_payment_success(){
     echo "cURL Error #:" . $err;
   } else {
 
-    if ($result['Status'] == 100) {
-      $wpdb->update(
-        $wpdb->prefix . 'hooramat_sale_orders',
-        array(
-          'payment_time' => date('Y-m-d H:i:s'),
-          'payment_code' => $result['RefID']
-        ),
-        array ('id' => $_GET['order'])
-      );
-      $ida = implode( array_keys( unserialize($order['services']) ), ', ' );
-      $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where id IN ({$ids})", OBJECT );
-      foreach ($services as $service) {
+    if ($result['Status'] == 100 || $result['Status'] == 101) {
+      if (!$order['payment_code']) {
         $wpdb->update(
-          $wpdb->prefix . 'hooramat_sale_services',
-          array('total' => $service->total - 1),
-          array ('id' => $service->id)
+          $wpdb->prefix . 'hooramat_sale_orders',
+          array(
+            'payment_time' => date('Y-m-d H:i:s'),
+            'payment_code' => $result['RefID']
+          ),
+          array ('id' => $_GET['order'])
         );
+        $ids = implode( array_keys( unserialize($order['services']) ), ', ' );
+        $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where id IN ({$ids})", OBJECT );
+        foreach ($services as $service) {
+          $wpdb->update(
+            $wpdb->prefix . 'hooramat_sale_services',
+            array('total' => $service->total - 1),
+            array ('id' => $service->id )
+          );
+        }
+        sendSms($order['code'], $order['mobile']);
       }
-      echo 'Transation success. RefID:' . $result['RefID'];
+      ?>
+        <br><br><br>
+        <div class="">
+          <p class="title white-text">خرید شما موفق بود. کد پیگیری خود را به خاطر بسپارید و برای رزرو وقت با کلینیک تماس بگیرید.</p>
+          <h2 class="display-2">کد پیگیری: <?= $order['code'] ?></h2>
+        </div>
+        <br><br><br>
+      <?php
+      // echo 'Transation successssss. RefID:' . $result['RefID'];
     } else {
       echo 'Transation failed. Status:' . $result['Status'];
     }
   }
   ?>
-    پرواخت شما با موفقیت انجام شد
+
   <?php
+}
+
+
+
+function getSmsIrToken(){
+	$postData = array(
+		'UserApiKey' => 'bfcc99d57f2f37edff689d2a',
+		'SecretKey' => 'uiy3@d9@#%FI4?>D_+2^!xG}|&',
+		'System' => 'php_rest_v_1_1'
+	);
+	$postString = json_encode($postData);
+	$ch = curl_init("http://RestfulSms.com/api/Token");
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+	curl_setopt($ch, CURLOPT_HEADER, false);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+	curl_setopt($ch, CURLOPT_POST, count($postString));
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $postString);
+	$result = curl_exec($ch);
+	curl_close($ch);
+	$response = json_decode($result);
+	if(is_object($response)){
+		$resultVars = get_object_vars($response);
+		if(is_array($resultVars)){
+			@$IsSuccessful = $resultVars['IsSuccessful'];
+			if($IsSuccessful == true){
+				@$TokenKey = $resultVars['TokenKey'];
+				$resp = $TokenKey;
+			} else {
+				$resp = false;
+			}
+		}
+	}
+	return $resp;
+}
+function sendSms($Code, $MobileNumber){
+	$token = getSmsIrToken();
+	if($token != false){
+		$postData = array(
+			'Code' => $Code,
+			'MobileNumber' => $MobileNumber,
+		);
+		$url = "http://RestfulSms.com/api/VerificationCode";
+		$postString = json_encode($postData);
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+			'Content-Type: application/json',
+			'x-sms-ir-secure-token: '.$token
+		));
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+		curl_setopt($ch, CURLOPT_POST, count($postString));
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $postString);
+		$VerificationCode = curl_exec($ch);
+		curl_close($ch);
+		// return $result;
+		// $VerificationCode = $this->execute($postData, $url, $token);
+		$object = json_decode($VerificationCode);
+		if(is_object($object)){
+			$array = get_object_vars($object);
+			if(is_array($array)){
+				$result = $array['Message'];
+			} else {
+				$result = false;
+			}
+		} else {
+			$result = false;
+		}
+	} else {
+		$result = false;
+	}
+	return $result;
 }
 ?>
