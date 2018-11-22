@@ -48,6 +48,7 @@ function hooramat_sale_activation() {
 
   CREATE TABLE {$wpdb->prefix}hooramat_sale_orders (
 		id mediumint(9) NOT NULL AUTO_INCREMENT,
+		code mediumint(9) NULL,
     first_name varchar(255) NULL,
     last_name varchar(255) NULL,
     mobile varchar(255) NULL,
