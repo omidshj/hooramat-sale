@@ -14,6 +14,7 @@ Text Domain: hooraweb
 */
 include ('services.php');
 include ('orders.php');
+include ('shortcode.php');
 
 
 function hooramat_sale_activation() {
@@ -47,10 +48,13 @@ function hooramat_sale_activation() {
 
   CREATE TABLE {$wpdb->prefix}hooramat_sale_orders (
 		id mediumint(9) NOT NULL AUTO_INCREMENT,
-    name varchar(255) NULL,
-    description varchar(255) NULL,
-    start datetime,
-    finish datetime,
+    first_name varchar(255) NULL,
+    last_name varchar(255) NULL,
+    mobile varchar(255) NULL,
+    area varchar(255) NULL,
+    services text NULL,
+    payment_time datetime NULL,
+    payment_code mediumint(9) NULL,
     PRIMARY KEY (id)
 	) $charset_collate;
   ";
