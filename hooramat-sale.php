@@ -28,6 +28,8 @@ function hooramat_sale_activation() {
 		id mediumint(9) NOT NULL AUTO_INCREMENT,
     name varchar(255) NULL,
     description varchar(255) NULL,
+    services longtext NULL,
+    coupons longtext NULL,
     start datetime,
     finish datetime,
     PRIMARY KEY (id)
