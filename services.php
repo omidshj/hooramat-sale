@@ -80,43 +80,15 @@ function hooramat_sale_services(){
 }
 
 function hooramat_sale_groups(){
-  hooramat_sale_groups_store();
-  // hooramat_sale_groups_update();
-  print_r($_POST);
-  $edit = 0;
-  foreach($_POST as $key => $value) if ($value == 'ویرایش') $edit = $key; 
+  $edit = 0; foreach($_POST as $key => $value) if ($value == 'ویرایش') $edit = $key; 
+  $stored = hooramat_sale_groups_store();
+  $updated = hooramat_sale_groups_update();
   
-
   global $wpdb;
-  $groups_per_page = 20;
-  $paged = isset($_GET['paged'])? $_GET['paged']: 1;
-  $start = ($paged - 1) * $groups_per_page;
   $groups = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups", OBJECT );
-  $total_groups = ceil( $wpdb->num_rows / $groups_per_page);
-  $groups = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups limit $start, $groups_per_page", OBJECT );
   ?>
-  <div><?= $edit ?></div>
   <div class="wrap">
     <h1 class="wp-heading-inline">حراج ها</h1>
-    <div class="tablenav top">
-      <div class="tablenav-pages">
-        <?php
-        if( $total_groups > 1 )  {
-          $format = get_option('permalink_structure')? 'page/%#%/': '&paged=%#%';
-          echo paginate_links(array(
-            'base'          => str_replace( 999999999, '%#%', esc_url( get_pagenum_link( 999999999 ) ) ),
-            'format'        => $format,
-            'current'       => $paged,
-            'total'         => $total_groups,
-            'mid_size'      => 2,
-            'prev_text'     => is_rtl()? '&rarr;': '&larr;',
-            'next_text'     => is_rtl()? '&larr;': '&rarr;',
-           ));
-        }
-        ?>
-      </div>
-    </div>
-    <?php print_r($_POST) ?>
     <form method="POST">
       <table class="wp-list-table widefat fixed striped ">
         <tr>
@@ -129,35 +101,52 @@ function hooramat_sale_groups(){
         </tr>
         <?php foreach ($groups as $group): ?>
           <tr>
-            <td><?= $group->id ?></td>
-            <td><a href="?page=hooramat_sale_services&group=<?= $group->id ?>"><?= $group->name ?></a></td>
-            <td><?= $group->description ?></td>
-            <td><?= $group->start ?></td>
-            <td><?= $group->finish ?></td>
-            <td><input type="Submit" value="ویرایش" name="<?= $group->id ?>" class="button button-primary button-large" time="<?= $t ?>"></td>
+            <?php if ($group->id == $edit): ?>
+              <td><?= $group->id ?><input type="hidden" name="edit" value="<?= $group->id ?>"></td>
+              <td><input type="text" name="name" value="<?= $_POST['name'] ?? $group->name ?>"></td>
+              <td><input type="text" name="description" value="<?= $_POST['description'] ?? $group->description ?>"></td>
+              <td>
+                <input type="date" name="startdate" value="<?= $_POST['startdate'] ?? date("Y-m-d", strtotime($group->startdate)) ?>"><br>
+                <input type="time" name="starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($group->startdate)) ?>">
+              </td>
+              <td>
+                <?= $group->finish ?>
+                <input type="date" name="finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($group->finishdate)) ?>"><br>
+                <input type="time" name="finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($group->finistime)) ?>">
+              </td>
+              <td><input type="Submit" value="ذخیره" name="<?= $group->id ?>" class="button button-primary button-large"></td>
+            <?php else: ?>
+              <td><?= $group->id ?></td>
+              <td><a href="?page=hooramat_sale_services&group=<?= $group->id ?>"><?= $group->name ?></a></td>
+              <td><?= $group->description ?></td>
+              <td><?= $group->start ?></td>
+              <td><?= $group->finish ?></td>
+              <td>
+                <?php if($edit == 0): ?>
+                  <input type="Submit" value="ویرایش" name="<?= $group->id ?>" class="button button-primary button-large" ">
+                <?php endif; ?>
+              </td>
+            <?php endif; ?>
           </tr>
         <?php endforeach; ?>
-        <tr>
-          <td>
-          </td>
-          <td>
-            <input type="text" name="create_name" value="<?= $_POST['name'] ?? $data['name'] ?? '' ?>">
-          </td>
-          <td>
-            <input type="text" name="create_description" value="<?= $_POST['description'] ?? $data['description'] ?? '' ?>">
-          </td>
-          <td>
-            <input type="date" name="create_startdate" value="<?= $_POST['start'] ?? date("Y-m-d", strtotime($data['start'])) ?? '' ?>"><br>
-            <input type="time" name="create_starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($data['start'])) ?? '' ?>">
-          </td>
-          <td>
-            <input type="date" name="create_finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($data['finish'])) ?? '' ?>"><br>
-            <input type="time" name="create_finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($data['finish'])) ?? '' ?>">
-          </td>
-          <td>
-            <input type="Submit" value="افزودن" name="register" class="button button-primary button-large" time="<?= $t ?>">
-          </td>
-        </tr>
+        <?php if($edit == 0): ?>
+          <tr>
+            <td></td>
+            <td><input type="text" name="create_name" value="<?= $stored? '':  $_POST['create_name'] ?>"></td>
+            <td><input type="text" name="create_description" value="<?= $stored? '': $_POST['create_description'] ?>"></td>
+            <td>
+              <input type="date" name="create_startdate" value="<?= date("Y-m-d") ?>"><br>
+              <input type="time" name="create_starttime" value="<?= date("H:i:s") ?>">
+            </td>
+            <td>
+              <input type="date" name="create_finishdate" value="<?= date("Y-m-d") ?>"><br>
+              <input type="time" name="create_finishtime" value="<?= date("H:i:s") ?>">
+            </td>
+            <td>
+              <input type="Submit" value="افزودن" name="register" class="button button-primary button-large" >
+            </td>
+          </tr>
+        <?php endif; ?>
       </table>
     </form>
   </div>
@@ -172,114 +161,116 @@ function hooramat_sale_groups_store(){
         'name' => $_POST['create_name'],
         'description' => $_POST['create_description'],
         'start' => $_POST['create_startdate'] . ' ' . $_POST['create_starttime'],
-        'finish' => $_POST['create_finishdate'] . ' ' . $_POST['create_finishtime']
+        'finish' => $_POST['create_finishdate'] . ' ' . $_POST['create_finishtime'],
+        'services' => serialize([]),
+        'coupons' => serialize([]),
       )
     );
-    // return wp_redirect( admin_url( '/options-general.php?page=hooramat_sale_services' ), 301 );
+    return true;
   }
-  //return hooramat_sale_group_create([]);
+  return false;
 }
 function hooramat_sale_groups_update(){
-
+  if(!empty($_POST['edit']) && !empty($_POST['name']) && !empty($_POST['description']) ){
+    global $wpdb;
+    $wpdb->update(
+      $wpdb->prefix . 'hooramat_sale_groups',
+      array(
+        'name' => $_POST['name'],
+        'description' => $_POST['description'],
+        'start' => $_POST['startdate'] . ' ' . $_POST['starttime'],
+        'finish' => $_POST['finishdate'] . ' ' . $_POST['finishtime']
+      ),
+      array ('id' => $_POST['edit'])
+    );
+    return true;
+  }
+  return false;
 }
-function hooramat_sale_group_create($data){
-  ?>
-  <div class="wrap">
-    <h1 class="wp-heading-inline">افزودن حراج</h1>
-    <br><br>
-    <form method="POST">
-      <label for="name">نام: </label>
-      <input type="text" id="name" name="name" value="<?= $_POST['name'] ?? $data['name'] ?? '' ?>"><br>
 
-      <label for="description">توضیحات: </label>
-      <input type="text" id="description" name="description" value="<?= $_POST['description'] ?? $data['description'] ?? '' ?>"><br>
 
-      <label for="startdate">شروع: </label>
-      <input type="date" id="startdate" name="startdate" value="<?= $_POST['start'] ?? date("Y-m-d", strtotime($data['start'])) ?? '' ?>">
-      <input type="time" id="starttime" name="starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($data['start'])) ?? '' ?>"><br>
 
-      <label for="finishdate">پایان: </label>
-      <input type="date" id="finishdate" name="finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($data['finish'])) ?? '' ?>">
-      <input type="time" id="finishtime" name="finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($data['finish'])) ?? '' ?>"><br>
 
-      <br>
-      <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large" time="<?= $t ?>">
-    </form>
-  </div>
-  <?php
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function hooramat_sale_group(){
   global $wpdb;
-  $group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups where id = {$_GET['group']}", ARRAY_A );
-  $services_per_page = 20;
-  $paged = isset($_GET['paged'])? $_GET['paged']: 1;
-  $start = ($paged - 1) * $services_per_page;
+  $group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups where id = {$_GET['group']}", OBJECT );
+  $service_edit = -1; foreach($_POST as $key => $value) if ($value == 'ویرایش خدمت') $service_edit = $key; 
+  $service_stored = hooramat_sale_group_service_store($group);;
+  $service_updated = hooramat_sale_group_service_update($group);;
   $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services", OBJECT );
-  $total_services = ceil( $wpdb->num_rows / $services_per_page);
-  $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services limit $start, $services_per_page", OBJECT );
   ?>
   <div class="wrap">
-    <h1 class="wp-heading-inline"><?= $group['name'] ?></h1>
+    <h1 class="wp-heading-inline"><?= $group->name ?></h1>
     <br><br>
-    <form method="POST">
-      <label for="name">نام: </label>
-      <input type="text" id="name" name="name" value="<?= $_POST['name'] ?? $group['name'] ?? '' ?>"><br>
 
-      <label for="description">توضیحات: </label>
-      <input type="text" id="description" name="description" value="<?= $_POST['description'] ?? $group['description'] ?? '' ?>"><br>
-
-      <label for="startdate">شروع: </label>
-      <input type="date" id="startdate" name="startdate" value="<?= $_POST['start'] ?? date("Y-m-d", strtotime($group['start'])) ?? '' ?>">
-      <input type="time" id="starttime" name="starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($group['start'])) ?? '' ?>"><br>
-
-      <label for="finishdate">پایان: </label>
-      <input type="date" id="finishdate" name="finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($group['finish'])) ?? '' ?>">
-      <input type="time" id="finishtime" name="finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($group['finish'])) ?? '' ?>"><br>
-
-      <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large" time="<?= $t ?>">
-    </form>
-
-    <div class="tablenav top">
-      <div class="tablenav-pages">
-        <?php
-        if( $total_services > 1 )  {
-          $format = get_option('permalink_structure')? 'page/%#%/': '&paged=%#%';
-          echo paginate_links(array(
-            'base'          => str_replace( 999999999, '%#%', esc_url( get_pagenum_link( 999999999 ) ) ),
-            'format'        => $format,
-            'current'       => $paged,
-            'total'         => $total_services,
-            'mid_size'      => 2,
-            'prev_text'     => is_rtl()? '&rarr;': '&larr;',
-            'next_text'     => is_rtl()? '&larr;': '&rarr;',
-           ));
-        }
-        ?>
-      </div>
-    </div>
     <h1 class="wp-heading-inline">خدمات</h1>
-    <a class="page-title-action" href="?page=hooramat_sale_services&group=<?=$group['id']?>&create=service">افزودن خدمات</a>
-    <table class="wp-list-table widefat fixed striped ">
-      <tr>
-        <th>شناسه</th>
-        <th>نام</th>
-        <th>توضیح</th>
-        <th>تعداد</th>
-        <th>قیمت</th>
-        <th>حراج</th>
-      </tr>
-      <?php foreach ($services as $service): ?>
+    <form method="POST">
+      <table class="wp-list-table widefat fixed striped ">
         <tr>
-          <td><?= $service->id ?></td>
-          <td><a href="?page=hooramat_sale_services&group=<?= $group['id'] ?>&service=<?= $service->id ?>"><?= $service->name ?></a></td>
-          <td><?= $service->description ?></td>
-          <td><?= $service->total ?></td>
-          <td><?= $service->price ?></td>
-          <td><?= $service->sale ?></td>
+          <th>ترتیب</th>
+          <th>نام</th>
+          <th>توضیح</th>
+          <th>تعداد</th>
+          <th>قیمت</th>
+          <th>حراج</th>
+          <th></th>
         </tr>
-      <?php endforeach; ?>
-    </table>
+        <?php foreach ( unserialize($group->services) as $index => $service): ?>
+          <tr>
+            <?php if ($index == $service_edit): ?>
+              <td>
+                <input type="hidden" name="su" value="<?= $index ?>">
+                <input type="text" name="su_order" value="<?= $service['order'] ?>">
+              </td>
+              <td><?= $service['name'] ?></td>
+              <td><?= $service['description'] ?></td>
+              <td><?= $service['total'] ?></td>
+              <td><?= $service['price'] ?></td>
+              <td><?= $service['sale'] ?></td>
+              <td><input type="Submit" value="ذخیره" class="button button-primary" ></td>
+            <?php else: ?>
+              <td><?= $service['order'] ?></td>
+              <td><?= $service['name'] ?></td>
+              <td><?= $service['description'] ?></td>
+              <td><?= $service['total'] ?></td>
+              <td><?= $service['price'] ?></td>
+              <td><?= $service['sale'] ?></td>
+              <td>
+                <?php if($service_edit == -1): ?>
+                  <input type="Submit" value="ویرایش خدمت" name="<?= $index ?>" class="button button-primary button-large" ">
+                <?php endif; ?>
+              </td>
+            <?php endif; ?>
+          </tr>
+        <?php endforeach; ?>
+        <?php if($service_edit == -1): ?>
+          <tr>
+            <td><input type="text" name="ss_order" value="<?= ($service_stored || empty($_POST['ss_order']))? '':  $_POST['ss_order'] ?>"></td>
+            <td><input type="text" name="ss_name" value="<?= ($service_stored || empty($_POST['ss_name']))? '':  $_POST['ss_name'] ?>"></td>
+            <td><input type="text" name="ss_description" value="<?= ($service_stored || empty($_POST['ss_description']))? '': $_POST['ss_description'] ?>"></td>
+            <td><input type="text" name="ss_total" value="<?= ($service_stored || empty($_POST['ss_total']))? '': $_POST['ss_total'] ?>"></td>
+            <td><input type="text" name="ss_price" value="<?= ($service_stored || empty($_POST['ss_price']))? '': $_POST['ss_price'] ?>"></td>
+            <td><input type="text" name="ss_sale" value="<?= ($service_stored || empty($_POST['ss_sale']))? '': $_POST['ss_sale'] ?>"></td>
+            <td><input type="Submit" value="افزودن" name="register" class="button button-primary button-large" ></td>
+          </tr>
+        <?php endif; ?>
+      </table>
+    </form>
 
     <br/>
     <br/>
@@ -287,7 +278,6 @@ function hooramat_sale_group(){
 
     <?php print_r( unserialize($group->coupons) ); ?>
     <h1 class="wp-heading-inline">کوپن ها</h1>
-    <a class="page-title-action" href="?page=hooramat_sale_services&group=<?=$group['id']?>&create=coupon">افزودن کوپن</a>
     <table class="wp-list-table widefat fixed striped ">
       <tr>
         <th>شناسه</th>
@@ -313,6 +303,40 @@ function hooramat_sale_group(){
   </div>
   <?php
 }
+function hooramat_sale_group_service_store($group){
+  if(!empty($_POST['ss_name']) && !empty($_POST['ss_description']) ){
+    $services = unserialize($group->services);
+    $services[] = [
+      'order' => 0,
+      'name' => $_POST['ss_name'],
+      'description' => $_POST['ss_description'],
+      'total' => $_POST['ss_total'],
+      'price' => $_POST['ss_price'],
+      'sale' => $_POST['ss_sale']
+    ];
+    print_r($services);
+    global $wpdb;
+    $wpdb->update(
+      $wpdb->prefix . 'hooramat_sale_groups',
+      array(
+        'services' => serialize($services)
+      ),
+      array ('id' => $group->id)
+    );
+    return true;
+  }
+  return false;
+}
+function hooramat_sale_group_service_update($group){
+  if(!empty($_POST['su']) && !empty($_POST['su_name']) && !empty($_POST['su_description']) ){
+    $services = unserialize($group->services);
+    $services[$_POST['su']]['order'] = 1;
+    print_r($services);
+    $wpdb->update($wpdb->prefix.'hooramat_sale_groups', ['services' => serialize($services)], ['id' => $group->id]);
+    return true;
+  }
+  return false;
+}
 
 function hooramat_sale_service_form($data){
   ?>
@@ -336,7 +360,41 @@ function hooramat_sale_service_form($data){
       <input type="text" id="sale" name="sale" value="<?= $_POST['sale'] ?? $data['sale'] ?? '' ?>"><br>
 
       <br>
-      <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large" time="<?= $t ?>">
+      <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large" >
+    </form>
+  </div>
+  <?php
+}
+
+
+
+
+
+
+
+
+function hooramat_sale_group_create($data){
+  ?>
+  <div class="wrap">
+    <h1 class="wp-heading-inline">افزودن حراج</h1>
+    <br><br>
+    <form method="POST">
+      <label for="name">نام: </label>
+      <input type="text" id="name" name="name" value="<?= $_POST['name'] ?? $data['name'] ?? '' ?>"><br>
+
+      <label for="description">توضیحات: </label>
+      <input type="text" id="description" name="description" value="<?= $_POST['description'] ?? $data['description'] ?? '' ?>"><br>
+
+      <label for="startdate">شروع: </label>
+      <input type="date" id="startdate" name="startdate" value="<?= $_POST['start'] ?? date("Y-m-d", strtotime($data['start'])) ?? '' ?>">
+      <input type="time" id="starttime" name="starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($data['start'])) ?? '' ?>"><br>
+
+      <label for="finishdate">پایان: </label>
+      <input type="date" id="finishdate" name="finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($data['finish'])) ?? '' ?>">
+      <input type="time" id="finishtime" name="finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($data['finish'])) ?? '' ?>"><br>
+
+      <br>
+      <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large">
     </form>
   </div>
   <?php
