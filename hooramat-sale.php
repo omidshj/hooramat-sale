@@ -28,8 +28,6 @@ function hooramat_sale_activation() {
 		id mediumint(9) NOT NULL AUTO_INCREMENT,
     name varchar(255) NULL,
     description varchar(255) NULL,
-    services longtext NULL,
-    coupons longtext NULL,
     start datetime,
     finish datetime,
     PRIMARY KEY (id)
@@ -37,12 +35,24 @@ function hooramat_sale_activation() {
 
   CREATE TABLE {$wpdb->prefix}hooramat_sale_services (
 		id mediumint(9) NOT NULL AUTO_INCREMENT,
-		group_id mediumint(9) NOT NULL,
+    group_id mediumint(9) NOT NULL,
+    sort mediumint(9) NULL,
     name varchar(255) NULL,
     description varchar(255) NULL,
     total mediumint(9),
     price mediumint(9),
     sale mediumint(9),
+    PRIMARY KEY (id)
+  ) $charset_collate;
+  
+  CREATE TABLE {$wpdb->prefix}hooramat_sale_coupons (
+		id mediumint(9) NOT NULL AUTO_INCREMENT,
+		group_id mediumint(9) NOT NULL,
+    code varchar(255) NULL,
+    description varchar(255) NULL,
+    total mediumint(9),
+    percent mediumint(9),
+    discount mediumint(9),
     PRIMARY KEY (id)
 	) $charset_collate;
 

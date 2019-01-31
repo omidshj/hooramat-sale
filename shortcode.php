@@ -16,6 +16,7 @@ function hooramat_sale_show_table($atts){
   global $wpdb;
   $group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups where id = {$atts['sale']}", ARRAY_A );
   $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where group_id={$atts['sale']}", OBJECT );
+  usort($services, function($a, $b){return $a->sort > $b->sort;});
   if (empty($group) || empty($services)) return 'bad request';
   date_default_timezone_set("Asia/Tehran");
   $now = date(time());
@@ -33,7 +34,7 @@ function hooramat_sale_show_table($atts){
         $minute = floor(($diff % (60*60)) / (60));
         $second = floor(($diff % 60));
       ?><br>
-      <div class="remaining-time white-text">
+      <div class="remaining-time ">
         <p class="display-3 margin-0" style="text-align: center;">
           <span class="second"><?= $second;?></span><span > : </span>
           <span class="minute"><?= $minute;?></span><span > : </span>
@@ -54,7 +55,7 @@ function hooramat_sale_show_table($atts){
       <tbody>
         <?php foreach ($services as $service): ?>
           <tr>
-            <td><div class="title white-text"><?= $service->name ?></div> <?= $service->description ?></td>
+            <td><div class="title "><?= $service->name ?></div> <?= $service->description ?></td>
             <td style="padding-right:0; padding-left: 0;">
               <div style="text-decoration: line-through;"><?= $service->price ?></div>
               <span class="secondary-text" ><?= $service->sale ?></span>
@@ -85,23 +86,27 @@ function hooramat_sale_show_table($atts){
       <br><br><br><br>
       <div class="row">
         <div class="input-fieldx col s6 right-align">
-          <label class="title white-text">نام:</label>
+          <label class="title ">نام:</label>
           <input name="first_name" type="text" class="validate" value="<?= $_POST['first_name'] ?? '' ?>">
         </div>
         <div class="input-fieldx col s6 right-align">
-          <label class="title white-text">نام خانوادگی:</label>
+          <label class="title ">نام خانوادگی:</label>
           <input name="last_name" type="text" class="validate" value="<?= $_POST['last_name'] ?? '' ?>">
         </div>
         <div class="col s12">
           <br>
         </div>
         <div class="input-fieldx col s6 right-align">
-          <label class="title white-text">شماره تلفن:</label>
+          <label class="title ">شماره تلفن:</label>
           <input name="mobile" type="text" class="validate" value="<?= $_POST['mobile'] ?? '' ?>">
         </div>
         <div class="input-fieldx col s6 right-align">
-          <label class="title white-text">محدوده محل سکونت:</label>
+          <label class="title ">محدوده محل سکونت:</label>
           <input name="area" type="text" class="validate" value="<?= $_POST['area'] ?? '' ?>">
+        </div>
+        <div class="input-fieldx col s6 right-align">
+          <label class="title ">کد تخفیف:</label>
+          <input name="coupon" type="text" class="validate" value="<?= $_POST['coupon'] ?? '' ?>">
         </div>
       </div>
       <input type="submit" name="" value="ثبت درخواست">
@@ -132,6 +137,10 @@ function hooramat_sale_preview($atts){
   $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where group_id={$atts['sale']} and id IN ({$ids})", OBJECT );
   $cost = 0;
   if (empty($group) || empty($services)) return 'bad request';
+  if(!empty($_POST['coupon'])){
+    $cp = strtolower($_POST['coupon']);
+    $coupon = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_coupons where group_id={$atts['sale']} and code = '{$cp}'", OBJECT );
+  }
   ?>
   <form class="" method="post">
     <input type="hidden" name="group" value="<?= $atts['sale'] ?>">
@@ -146,12 +155,21 @@ function hooramat_sale_preview($atts){
         <?php foreach ($services as $service): $cost += $service->sale; ?>
           <tr>
             <td>
-              <div class="title white-text"><?= $service->name ?></div> <?= $service->description ?>
+              <div class="title "><?= $service->name ?></div> <?= $service->description ?>
               <input type="hidden" name="services[<?= $service->id ?>][count]" value="<?= $_POST['services'][$service->id]['count'] ?>">
             </td>
             <td><?= $service->sale ?></td>
           </tr>
         <?php endforeach; ?>
+        <?php if(!empty($coupon)): ?>
+          <tr>
+            <td>
+              <div class="title">کد تخفیف: <?= $_POST['coupon'] ?></div>
+              <input type="hidden" name="coupon" value="<?= $_POST['coupon'] ?>">
+            </td>
+            <td>- <?php $d = $cost/100*5; echo $d; $cost -= $d; ?></td>
+          </tr>
+        <?php endif; ?>
         <tr>
           <th>جمع</th>
           <th><?= $cost ?></th>
@@ -160,18 +178,23 @@ function hooramat_sale_preview($atts){
     </table>
     <br><br><br><br>
     <div class="row">
-      <p class="col s6 title white-text">
+      <p class="col s6 title ">
         نام: <?= $_POST['first_name'] ?> <input type="hidden" name="first_name" value="<?= $_POST['first_name'] ?>">
       </p>
-      <p class="col s6 title white-text">
+      <p class="col s6 title ">
         نام خانوادگی: <?= $_POST['last_name'] ?> <input type="hidden" name="last_name" value="<?= $_POST['last_name'] ?>">
       </p>
-      <p class="col s6 title white-text">
+      <p class="col s6 title ">
         تلفن: <?= $_POST['mobile'] ?> <input type="hidden" name="mobile" value="<?= $_POST['mobile'] ?>">
       </p>
-      <p class="col s6 title white-text">
+      <p class="col s6 title ">
         محدوده محل سکونت: <?= $_POST['area'] ?> <input type="hidden" name="area" value="<?= $_POST['area'] ?>">
       </p>
+      <?php if(!empty($coupon)): ?>
+        <p class="col s6 title ">
+          کد تخفیف: <?= $_POST['coupon'] ?> <input type="hidden" name="coupon" value="<?= $_POST['coupon'] ?>">
+        </p>
+      <?php endif; ?>
     </div>
     <br>
     <input type="hidden" name="payment" value="11258">
@@ -182,7 +205,7 @@ function hooramat_sale_preview($atts){
 }
 
 
-add_action('template_redirect', function(){
+add_action('wp_loaded', function(){
   if(
     !empty($_POST['group']) &&
     !empty($_POST['services']) &&
@@ -192,18 +215,40 @@ add_action('template_redirect', function(){
     !empty($_POST['area']) &&
     !empty($_POST['payment'])
   ){
-    $requested_services = $_POST['services'];
+    // $requested_services = $_POST['services'];
+    $requested_services = [];
     global $wpdb;
     $group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups where id = {$_POST['group']}", ARRAY_A );
     $ids = implode(array_keys($_POST['services']), ', ');
     $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where group_id={$_POST['group']} and id IN ({$ids})", OBJECT );
     $cost = 0;
-
-    foreach ($services as $service) {
-      $requested_services[$service->id]['sale'] = $service->sale;
-      $requested_services[$service->id]['cost'] = $requested_services[$service->id]['count'] * $service->sale;
-      $cost += $requested_services[$service->id]['cost'];
+    if(!empty($_POST['coupon'])){
+      $cp = strtolower($_POST['coupon']);
+      $coupon = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_coupons where group_id={$_POST['group']} and code = '{$cp}'", OBJECT );
     }
+    foreach ($services as $service) {
+      // $requested_services[$service->id]['sale'] = $service->sale;
+      // $requested_services[$service->id]['cost'] = $requested_services[$service->id]['count'] * $service->sale;
+      $requested_services[] = [
+        'sale' => $service->sale,
+        'count' => $_POST[$service->id]['count'],
+        'name' => $service->name,
+        'cost' => $_POST[$service->id]['count'] * $service->sale
+      ];
+      $cost += intval($_POST['services'][$service->id]['count']) * $service->sale;
+    }
+    if (!empty($coupon)){
+      $requested_services[] = [
+        'count' => 1,
+        'sale' => 0-$cost/100*5,
+        'name' => 'کوپن تخفیف: ' . $_POST['coupon'],
+        'cost' => -$cost/100*5
+      ];
+      $cost -= $cost/100*5;
+    }
+    // print_r($coupon);
+    // die();
+      
     // echo $cost;
     // echo "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان";
     // print_r($_POST);
@@ -218,7 +263,7 @@ add_action('template_redirect', function(){
         'mobile' => $_POST['mobile'],
         'area' => $_POST['area'],
         'services' => serialize( $requested_services ),
-        'cost' => $cost
+        'cost' => $cost,
       )
     );
     $wpdb->update(
@@ -233,10 +278,9 @@ add_action('template_redirect', function(){
     $jsonData = json_encode(array(
       'MerchantID' => '68f32bf2-ee3e-11e8-a3bb-005056a205be',
       'Amount' => $cost,
-      'CallbackURL' => get_permalink() . '?order=' . $wpdb->insert_id,
+      'CallbackURL' => home_url( $wp->request ) . $_SERVER['REQUEST_URI'] . '?order=' . $wpdb->insert_id,
       'Description'  => "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان"
     ));
-
     $ch = curl_init('https://www.zarinpal.com/pg/rest/WebGate/PaymentRequest.json');
     curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
@@ -252,11 +296,13 @@ add_action('template_redirect', function(){
     curl_close($ch);
     if ($err) {
       echo "cURL Error #:" . $err;
-      } else {
+      die();
+    } else {
       if ($result["Status"] == 100) {
         header('Location: https://www.zarinpal.com/pg/StartPay/' . $result["Authority"]);
       } else {
         echo'ERR: ' . $result["Status"];
+        die();
       }
     }
   }
@@ -308,7 +354,7 @@ function hooramat_sale_payment_success(){
       ?>
         <br><br><br>
         <div class="">
-          <p class="title white-text">خرید شما موفق بود. کد پیگیری خود را به خاطر بسپارید و برای رزرو وقت با کلینیک تماس بگیرید.</p>
+          <p class="title ">خرید شما موفق بود. کد پیگیری خود را به خاطر بسپارید و برای رزرو وقت با کلینیک تماس بگیرید.</p>
           <h2 class="display-2">کد پیگیری: <?= $order['code'] ?></h2>
         </div>
         <br><br><br>

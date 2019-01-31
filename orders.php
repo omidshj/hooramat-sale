@@ -6,13 +6,13 @@ function hooramat_sale_orders_menu() {
 
 function hooramat_sale_orders(){
   global $wpdb;
-  $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services", OBJECT_K );
+  // $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services", OBJECT_K );
   $orders_per_page = 200;
   $paged = isset($_GET['paged'])? $_GET['paged']: 1;
   $start = ($paged - 1) * $groups_per_page;
   $orders = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_orders", OBJECT );
   $total_orders = ceil( $wpdb->num_rows / $orders_per_page);
-  $orders = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_orders limit $start, $orders_per_page", OBJECT );
+  $orders = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_orders ORDER BY id DESC", OBJECT );
   $sum = 0; $total = 0;
   ?>
   <div class="wrap">
@@ -53,7 +53,7 @@ function hooramat_sale_orders(){
           <td><?= $order->payment_code ?><br><?= $order->payment_time ?></td>
           <td>
             <?php foreach (unserialize($order->services) as $key => $service): ?>
-              <?= 'x' . $service['count'] . ' ' . $services[$key]->name . ': ' . $service['cost'] ?>
+              <?= ($service['name'] ?? 'تعداد') . ': ' . $service['count'] . ' - هزینه: ' . $service['sale'] ?>
               <br>
             <?php endforeach; ?>
           </td>

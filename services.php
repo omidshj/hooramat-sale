@@ -3,87 +3,22 @@ add_action('admin_menu', 'hooramat_sale_services_menu');
 function hooramat_sale_services_menu() {
   add_submenu_page( 'options-general.php', 'حراج ها', 'حراج ها', 'edit_posts', 'hooramat_sale_services', 'hooramat_sale_services' );
 }
-
 function hooramat_sale_services(){
-  if(!empty($_GET['create']) && $_GET['create'] == 'group'){
-        // CREATE GROUP **********************************************************************
-        // if(!empty($_POST['name']) && !empty($_POST['description']) ){
-        //   global $wpdb;
-        //   $wpdb->insert(
-        //     $wpdb->prefix . 'hooramat_sale_groups',
-        //     array(
-        //       'name' => $_POST['name'],
-        //       'description' => $_POST['description'],
-        //       'start' => $_POST['startdate'] . ' ' . $_POST['starttime'],
-        //       'finish' => $_POST['finishdate'] . ' ' . $_POST['finishtime']
-        //     )
-        //   );
-        //   return wp_redirect( admin_url( '/options-general.php?page=hooramat_sale_services' ), 301 );
-        // }
-        // return hooramat_sale_group_create([]);
-  }else if(!empty($_GET['create']) && $_GET['create'] == 'service'){
-        // CREATE SERVICE *******************************************************************
-        // if(!empty($_POST['name']) && !empty($_POST['description']) ){
-        //   global $wpdb;
-        //   $wpdb->insert(
-        //     $wpdb->prefix . 'hooramat_sale_services',
-        //     array(
-        //       'group_id' => $_GET['group'],
-        //       'name' => $_POST['name'],
-        //       'description' => $_POST['description'],
-        //       'total' => $_POST['total'],
-        //       'price' => $_POST['price'],
-        //       'sale' => $_POST['sale'],
-        //     )
-        //   );
-        //   return wp_redirect( admin_url( "/options-general.php?page=hooramat_sale_services&group={$_GET['group']}" ), 301 );
-        // }
-        // return hooramat_sale_service_form([]);
-  }else if (!empty($_GET['group']) && !empty($_GET['service'])){
-        // UPDATE SERVICE ************************************************************************
-        // global $wpdb;
-        // if(!empty($_POST['name']) && !empty($_POST['description']) ){
-        //   $wpdb->update(
-        //     $wpdb->prefix . 'hooramat_sale_services',
-        //     array(
-        //       'name' => $_POST['name'],
-        //       'description' => $_POST['description'],
-        //       'total' => $_POST['total'],
-        //       'price' => $_POST['price'],
-        //       'sale' => $_POST['sale'],
-        //     ),
-        //     array ('id' => $_GET['service'])
-        //   );
-        //   return wp_redirect( admin_url( "/options-general.php?page=hooramat_sale_services&group={$_GET['group']}" ), 301 );
-        // }
-        // return hooramat_sale_service_form( $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where id = {$_GET['service']}", ARRAY_A ) );
-  } else if (!empty($_GET['group'])) {
-        // UPDATE GROUP ******************************************************************************
-        // if(!empty($_POST['name']) && !empty($_POST['description']) ){
-        //   global $wpdb;
-        //   $wpdb->update(
-        //     $wpdb->prefix . 'hooramat_sale_groups',
-        //     array(
-        //       'name' => $_POST['name'],
-        //       'description' => $_POST['description'],
-        //       'start' => $_POST['startdate'] . ' ' . $_POST['starttime'],
-        //       'finish' => $_POST['finishdate'] . ' ' . $_POST['finishtime']
-        //     ),
-        //     array ('id' => $_GET['group'])
-        //   );
-        //   return wp_redirect( admin_url( "/options-general.php?page=hooramat_sale_services&group={$_GET['group']}" ), 301 );
-        // }
-        return hooramat_sale_group();
+  if (!empty($_GET['group'])) {
+    return hooramat_sale_group();
   } else {
-        return hooramat_sale_groups();
+    return hooramat_sale_groups();
   }
 }
+
+
+
+
 
 function hooramat_sale_groups(){
   $edit = 0; foreach($_POST as $key => $value) if ($value == 'ویرایش') $edit = $key; 
   $stored = hooramat_sale_groups_store();
   $updated = hooramat_sale_groups_update();
-  
   global $wpdb;
   $groups = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups", OBJECT );
   ?>
@@ -92,12 +27,7 @@ function hooramat_sale_groups(){
     <form method="POST">
       <table class="wp-list-table widefat fixed striped ">
         <tr>
-          <th>شناسه</th>
-          <th>نام</th>
-          <th>توضیح</th>
-          <th>شروع</th>
-          <th>پایان</th>
-          <th></th>
+          <th>شناسه</th>  <th>نام</th>  <th>توضیح</th>  <th>شروع</th>  <th>پایان</th>  <th></th>
         </tr>
         <?php foreach ($groups as $group): ?>
           <tr>
@@ -106,13 +36,12 @@ function hooramat_sale_groups(){
               <td><input type="text" name="name" value="<?= $_POST['name'] ?? $group->name ?>"></td>
               <td><input type="text" name="description" value="<?= $_POST['description'] ?? $group->description ?>"></td>
               <td>
-                <input type="date" name="startdate" value="<?= $_POST['startdate'] ?? date("Y-m-d", strtotime($group->startdate)) ?>"><br>
-                <input type="time" name="starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($group->startdate)) ?>">
+                <input type="date" name="startdate" value="<?= $_POST['startdate'] ?? date("Y-m-d", strtotime($group->start)) ?>"><br>
+                <input type="time" name="starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($group->start)) ?>">
               </td>
               <td>
-                <?= $group->finish ?>
-                <input type="date" name="finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($group->finishdate)) ?>"><br>
-                <input type="time" name="finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($group->finistime)) ?>">
+                <input type="date" name="finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($group->finish)) ?>"><br>
+                <input type="time" name="finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($group->finish)) ?>">
               </td>
               <td><input type="Submit" value="ذخیره" name="<?= $group->id ?>" class="button button-primary button-large"></td>
             <?php else: ?>
@@ -132,8 +61,8 @@ function hooramat_sale_groups(){
         <?php if($edit == 0): ?>
           <tr>
             <td></td>
-            <td><input type="text" name="create_name" value="<?= $stored? '':  $_POST['create_name'] ?>"></td>
-            <td><input type="text" name="create_description" value="<?= $stored? '': $_POST['create_description'] ?>"></td>
+            <td><input type="text" name="create_name" value="<?= ($stored || empty($_POST['create_name']))? '':  $_POST['create_name'] ?>"></td>
+            <td><input type="text" name="create_description" value="<?= ($stored || empty($_POST['create_description']))? '': $_POST['create_description'] ?>"></td>
             <td>
               <input type="date" name="create_startdate" value="<?= date("Y-m-d") ?>"><br>
               <input type="time" name="create_starttime" value="<?= date("H:i:s") ?>">
@@ -162,8 +91,6 @@ function hooramat_sale_groups_store(){
         'description' => $_POST['create_description'],
         'start' => $_POST['create_startdate'] . ' ' . $_POST['create_starttime'],
         'finish' => $_POST['create_finishdate'] . ' ' . $_POST['create_finishtime'],
-        'services' => serialize([]),
-        'coupons' => serialize([]),
       )
     );
     return true;
@@ -192,27 +119,18 @@ function hooramat_sale_groups_update(){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function hooramat_sale_group(){
+  $service_edit = 0; foreach($_POST as $key => $value) if ($value == 'ویرایش خدمت') $service_edit = $key; 
+  $coupon_edit = 0; foreach($_POST as $key => $value) if ($value == 'ویرایش کوپن') $coupon_edit = $key; 
+  $service_stored = hooramat_sale_group_service_store();;
+  $service_updated = hooramat_sale_group_service_update();
+  $coupon_stored = hooramat_sale_group_coupon_store();;
+  $coupon_updated = hooramat_sale_group_coupon_update();
   global $wpdb;
   $group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups where id = {$_GET['group']}", OBJECT );
-  $service_edit = -1; foreach($_POST as $key => $value) if ($value == 'ویرایش خدمت') $service_edit = $key; 
-  $service_stored = hooramat_sale_group_service_store($group);;
-  $service_updated = hooramat_sale_group_service_update($group);;
-  $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services", OBJECT );
+  $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services  where group_id = {$_GET['group']}", OBJECT );
+  usort($services, function($a, $b){return $a->sort > $b->sort;});
+  $coupons = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_coupons  where group_id = {$_GET['group']}", OBJECT );
   ?>
   <div class="wrap">
     <h1 class="wp-heading-inline"><?= $group->name ?></h1>
@@ -222,43 +140,40 @@ function hooramat_sale_group(){
     <form method="POST">
       <table class="wp-list-table widefat fixed striped ">
         <tr>
-          <th>ترتیب</th>
-          <th>نام</th>
-          <th>توضیح</th>
-          <th>تعداد</th>
-          <th>قیمت</th>
-          <th>حراج</th>
-          <th></th>
+          <th>ترتیب</th>   <th>نام</th>   <th>توضیح</th>   <th>تعداد</th>   <th>قیمت</th>   <th>حراج</th>   <th></th>
         </tr>
-        <?php foreach ( unserialize($group->services) as $index => $service): ?>
+        <?php foreach ( $services as $service): ?>
           <tr>
-            <?php if ($index == $service_edit): ?>
+            <?php if ($service->id == $service_edit): ?>
               <td>
-                <input type="hidden" name="su" value="<?= $index ?>">
-                <input type="text" name="su_order" value="<?= $service['order'] ?>">
+                <input type="hidden" name="su" value="<?= $service->id ?>">
+                <input type="text" name="su_sort" value="<?= $service->sort ?>">
               </td>
-              <td><?= $service['name'] ?></td>
-              <td><?= $service['description'] ?></td>
-              <td><?= $service['total'] ?></td>
-              <td><?= $service['price'] ?></td>
-              <td><?= $service['sale'] ?></td>
-              <td><input type="Submit" value="ذخیره" class="button button-primary" ></td>
-            <?php else: ?>
-              <td><?= $service['order'] ?></td>
-              <td><?= $service['name'] ?></td>
-              <td><?= $service['description'] ?></td>
-              <td><?= $service['total'] ?></td>
-              <td><?= $service['price'] ?></td>
-              <td><?= $service['sale'] ?></td>
+              <td><input type="text" name="su_name" value="<?= $service->name ?>"></td>
+              <td><input type="text" name="su_description" value="<?= $service->description ?>"></td>
+              <td><input type="text" name="su_total" value="<?= $service->total ?>"></td>
+              <td><input type="text" name="su_price" value="<?= $service->price ?>"></td>
+              <td><input type="text" name="su_sale" value="<?= $service->sale ?>"></td>
               <td>
-                <?php if($service_edit == -1): ?>
-                  <input type="Submit" value="ویرایش خدمت" name="<?= $index ?>" class="button button-primary button-large" ">
+                <input type="Submit" name="action" value="ذخیره" class="button-primary" >
+                <input type="Submit" name="action" value="حذف" class="button" >
+              </td>
+            <?php else: ?>
+              <td><?= $service->sort ?? 0 ?></td>
+              <td><?= $service->name ?></td>
+              <td><?= $service->description ?></td>
+              <td><?= $service->total ?></td>
+              <td><?= $service->price ?></td>
+              <td><?= $service->sale ?></td>
+              <td>
+                <?php if($service_edit == 0 && $coupon_edit == 0): ?>
+                  <input type="Submit" value="ویرایش خدمت" name="<?= $service->id ?>" class="button-primary" ">
                 <?php endif; ?>
               </td>
             <?php endif; ?>
           </tr>
         <?php endforeach; ?>
-        <?php if($service_edit == -1): ?>
+        <?php if($service_edit == 0 && $coupon_edit == 0): ?>
           <tr>
             <td><input type="text" name="ss_order" value="<?= ($service_stored || empty($_POST['ss_order']))? '':  $_POST['ss_order'] ?>"></td>
             <td><input type="text" name="ss_name" value="<?= ($service_stored || empty($_POST['ss_name']))? '':  $_POST['ss_name'] ?>"></td>
@@ -266,137 +181,141 @@ function hooramat_sale_group(){
             <td><input type="text" name="ss_total" value="<?= ($service_stored || empty($_POST['ss_total']))? '': $_POST['ss_total'] ?>"></td>
             <td><input type="text" name="ss_price" value="<?= ($service_stored || empty($_POST['ss_price']))? '': $_POST['ss_price'] ?>"></td>
             <td><input type="text" name="ss_sale" value="<?= ($service_stored || empty($_POST['ss_sale']))? '': $_POST['ss_sale'] ?>"></td>
-            <td><input type="Submit" value="افزودن" name="register" class="button button-primary button-large" ></td>
+            <td><input type="Submit" value="افزودن" name="register" class="button-primary" ></td>
           </tr>
         <?php endif; ?>
       </table>
     </form>
 
-    <br/>
-    <br/>
-    <br/>
+    <br/><br/><br/>
 
-    <?php print_r( unserialize($group->coupons) ); ?>
     <h1 class="wp-heading-inline">کوپن ها</h1>
-    <table class="wp-list-table widefat fixed striped ">
-      <tr>
-        <th>شناسه</th>
-        <th>نام</th>
-        <th>توضیح</th>
-        <th>تعداد</th>
-        <th>قیمت</th>
-        <th>حراج</th>
-      </tr>
-      <?php if(!empty(unserialize($group->coupons))): ?>
-        <?php foreach ($services as $service): ?>
+    <form method="POST">
+      <table class="wp-list-table widefat fixed striped ">
+        <tr>
+          <th>کد</th>
+          <th>شرح</th>
+          <th>تعداد</th>
+          <th>درصد</th>
+          <th>مبلغ</th>
+          <th></th>
+        </tr>
+        <?php foreach ($coupons as $coupon): ?>
           <tr>
-            <td><?= $service->id ?></td>
-            <td><a href="?page=hooramat_sale_services&group=<?= $group['id'] ?>&service=<?= $service->id ?>"><?= $service->name ?></a></td>
-            <td><?= $service->description ?></td>
-            <td><?= $service->total ?></td>
-            <td><?= $service->price ?></td>
-            <td><?= $service->sale ?></td>
+            <?php if ($coupon->id == $coupon_edit): ?>
+              <td>
+                <input type="hidden" name="cu" value="<?= $coupon->id ?>">
+                <input type="text" name="cu_code" value="<?= $coupon->code ?>">
+              </td>
+              <td><input type="text" name="cu_description" value="<?= $coupon->description ?>"></td>
+              <td><input type="text" name="cu_total" value="<?= $coupon->total ?>"></td>
+              <td><input type="text" name="cu_percent" value="<?= $coupon->percent ?>"></td>
+              <td><input type="text" name="cu_discount" value="<?= $coupon->discount ?>"></td>
+              <td><input type="Submit" value="ذخیره" class="button button-primary" ></td>
+            <?php else: ?>
+              <td><?= $coupon->code ?></td>
+              <td><?= $coupon->description ?></td>
+              <td><?= $coupon->total ?></td>
+              <td><?= $coupon->percent ?></td>
+              <td><?= $coupon->discount ?></td>
+              <td>
+                <?php if($coupon_edit == 0): ?>
+                  <input type="Submit" value="ویرایش کوپن" name="<?= $coupon->id ?>" class="button-primary" ">
+                <?php endif; ?>
+              </td>
+            <?php endif; ?>
           </tr>
         <?php endforeach; ?>
-      <?php endif; ?>
-    </table>
+        <?php if($coupon_edit == 0): ?>
+          <tr>
+            <td><input type="text" name="cs_code" value="<?= ($service_stored || empty($_POST['cs_order']))? '':  $_POST['cs_order'] ?>"></td>
+            <td><input type="text" name="cs_description" value="<?= ($service_stored || empty($_POST['cs_description']))? '': $_POST['cs_description'] ?>"></td>
+            <td><input type="text" name="cs_total" value="<?= ($service_stored || empty($_POST['cs_total']))? '': $_POST['cs_total'] ?>"></td>
+            <td><input type="text" name="cs_percent" value="<?= ($service_stored || empty($_POST['cs_percent']))? '': $_POST['cs_percent'] ?>"></td>
+            <td><input type="text" name="cs_discount" value="<?= ($service_stored || empty($_POST['cs_discount']))? '': $_POST['cs_discount'] ?>"></td>
+            <td><input type="Submit" value="افزودن" name="register" class="button-primary" ></td>
+          </tr>
+        <?php endif; ?>
+      </table>
+    </form>
   </div>
   <?php
 }
-function hooramat_sale_group_service_store($group){
+function hooramat_sale_group_service_store(){
   if(!empty($_POST['ss_name']) && !empty($_POST['ss_description']) ){
-    $services = unserialize($group->services);
-    $services[] = [
-      'order' => 0,
-      'name' => $_POST['ss_name'],
-      'description' => $_POST['ss_description'],
-      'total' => $_POST['ss_total'],
-      'price' => $_POST['ss_price'],
-      'sale' => $_POST['ss_sale']
-    ];
-    print_r($services);
     global $wpdb;
-    $wpdb->update(
-      $wpdb->prefix . 'hooramat_sale_groups',
+    $wpdb->insert(
+      $wpdb->prefix . 'hooramat_sale_services',
       array(
-        'services' => serialize($services)
-      ),
-      array ('id' => $group->id)
+        'group_id' => $_GET['group'],
+        'name' => $_POST['ss_name'],
+        'description' => $_POST['ss_description'],
+        'total' => $_POST['ss_total'],
+        'price' => $_POST['ss_price'],
+        'sale' => $_POST['ss_sale'],
+      )
     );
     return true;
   }
   return false;
 }
-function hooramat_sale_group_service_update($group){
-  if(!empty($_POST['su']) && !empty($_POST['su_name']) && !empty($_POST['su_description']) ){
-    $services = unserialize($group->services);
-    $services[$_POST['su']]['order'] = 1;
-    print_r($services);
-    $wpdb->update($wpdb->prefix.'hooramat_sale_groups', ['services' => serialize($services)], ['id' => $group->id]);
+function hooramat_sale_group_service_update(){
+  if(isset($_POST['su'])){
+    global $wpdb;
+    if($_POST['action'] == 'حذف'){
+      $wpdb->delete( $wpdb->prefix.'hooramat_sale_services', ['id' => $_POST['su']] );
+      return true;
+    }elseif($_POST['action'] == 'ذخیره'){
+      $wpdb->update(
+        $wpdb->prefix.'hooramat_sale_services',
+        [
+          'sort' => $_POST['su_sort'],
+          'name' => $_POST['su_name'],
+          'description' => $_POST['su_description'],
+          'total' => $_POST['su_total'],
+          'price' => $_POST['su_price'],
+          'sale' => $_POST['su_sale'],
+        ],
+        ['id' => $_POST['su']]
+      );
+      return true;
+    }
+  }
+  return false;
+}
+function hooramat_sale_group_coupon_store(){
+  if(!empty($_POST['cs_code'])){
+    global $wpdb;
+    $wpdb->insert(
+      $wpdb->prefix . 'hooramat_sale_coupons',
+      array(
+        'group_id' => $_GET['group'],
+        'code' => $_POST['cs_code'],
+        'description' => $_POST['cs_description'],
+        'total' => $_POST['cs_total'],
+        'percent' => $_POST['cs_percent'],
+        'discount' => $_POST['cs_discount'],
+      )
+    );
     return true;
   }
   return false;
 }
-
-function hooramat_sale_service_form($data){
-  ?>
-  <div class="wrap">
-    <h1 class="wp-heading-inline">افزودن حراج</h1>
-    <br><br>
-    <form method="POST">
-      <label for="name">نام: </label>
-      <input type="text" id="name" name="name" value="<?= $_POST['name'] ?? $data['name'] ?? '' ?>"><br>
-
-      <label for="description">توضیحات: </label>
-      <input type="text" id="description" name="description" value="<?= $_POST['description'] ?? $data['description'] ?? '' ?>"><br>
-
-      <label for="total">تعداد: </label>
-      <input type="text" id="total" name="total" value="<?= $_POST['total'] ?? $data['total'] ?? '' ?>"><br>
-
-      <label for="price">قیمت: </label>
-      <input type="text" id="price" name="price" value="<?= $_POST['price'] ?? $data['price'] ?? '' ?>"><br>
-
-      <label for="sale">حراج: </label>
-      <input type="text" id="sale" name="sale" value="<?= $_POST['sale'] ?? $data['sale'] ?? '' ?>"><br>
-
-      <br>
-      <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large" >
-    </form>
-  </div>
-  <?php
-}
-
-
-
-
-
-
-
-
-function hooramat_sale_group_create($data){
-  ?>
-  <div class="wrap">
-    <h1 class="wp-heading-inline">افزودن حراج</h1>
-    <br><br>
-    <form method="POST">
-      <label for="name">نام: </label>
-      <input type="text" id="name" name="name" value="<?= $_POST['name'] ?? $data['name'] ?? '' ?>"><br>
-
-      <label for="description">توضیحات: </label>
-      <input type="text" id="description" name="description" value="<?= $_POST['description'] ?? $data['description'] ?? '' ?>"><br>
-
-      <label for="startdate">شروع: </label>
-      <input type="date" id="startdate" name="startdate" value="<?= $_POST['start'] ?? date("Y-m-d", strtotime($data['start'])) ?? '' ?>">
-      <input type="time" id="starttime" name="starttime" value="<?= $_POST['starttime'] ?? date("H:i:s", strtotime($data['start'])) ?? '' ?>"><br>
-
-      <label for="finishdate">پایان: </label>
-      <input type="date" id="finishdate" name="finishdate" value="<?= $_POST['finishdate'] ?? date("Y-m-d", strtotime($data['finish'])) ?? '' ?>">
-      <input type="time" id="finishtime" name="finishtime" value="<?= $_POST['finishtime'] ?? date("H:i:s", strtotime($data['finish'])) ?? '' ?>"><br>
-
-      <br>
-      <input type="Submit" value="ذخیره" name="register" class="button button-primary button-large">
-    </form>
-  </div>
-  <?php
+function hooramat_sale_group_coupon_update(){
+  if(isset($_POST['cu'])){
+    global $wpdb;
+    $wpdb->update(
+      $wpdb->prefix.'hooramat_sale_coupons',
+      [
+        'code' => $_POST['cu_code'],
+        'description' => $_POST['cu_description'],
+        'total' => $_POST['cu_total'],
+        'percent' => $_POST['cu_percent'],
+        'discount' => $_POST['cu_discount'],
+      ],
+      ['id' => $_POST['cu']]);
+    return true;
+  }
+  return false;
 }
 ?>
