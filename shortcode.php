@@ -231,7 +231,7 @@ add_action('wp_loaded', function(){
       // $requested_services[$service->id]['cost'] = $requested_services[$service->id]['count'] * $service->sale;
       $requested_services[] = [
         'sale' => $service->sale,
-        'count' => $_POST[$service->id]['count'],
+        'count' => $_POST['services'][$service->id]['count'],
         'name' => $service->name,
         'cost' => $_POST[$service->id]['count'] * $service->sale
       ];
