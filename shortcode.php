@@ -3,6 +3,8 @@ function hooramat_sale_shortcode( $atts ) {
   if (empty($atts['sale'])) return 'bad request';
   if (!empty($_GET['Authority']) && !empty($_GET['Status']) ) {
     return hooramat_sale_payment_success();
+  } else if (!empty($_GET['payir'])) {
+    payir_verify();
   } else if (!empty($_POST['services']) && !empty($_POST['first_name']) && !empty($_POST['last_name']) && !empty($_POST['mobile']) && !empty($_POST['area']) ) {
     return hooramat_sale_preview($atts);
   }else {
@@ -229,7 +231,7 @@ add_action('wp_loaded', function(){
     foreach ($services as $service) {
       // $requested_services[$service->id]['sale'] = $service->sale;
       // $requested_services[$service->id]['cost'] = $requested_services[$service->id]['count'] * $service->sale;
-      $requested_services[] = [
+      $requested_services[$service->id] = [
         'sale' => $service->sale,
         'count' => $_POST['services'][$service->id]['count'],
         'name' => $service->name,
@@ -274,35 +276,51 @@ add_action('wp_loaded', function(){
       array ('id' => $wpdb->insert_id)
     );
 
-
-    $jsonData = json_encode(array(
-      'MerchantID' => '68f32bf2-ee3e-11e8-a3bb-005056a205be',
-      'Amount' => $cost,
-      'CallbackURL' => home_url( $wp->request ) . $_SERVER['REQUEST_URI'] . '?order=' . $wpdb->insert_id,
-      'Description'  => "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان"
-    ));
-    $ch = curl_init('https://www.zarinpal.com/pg/rest/WebGate/PaymentRequest.json');
-    curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-      'Content-Type: application/json',
-      'Content-Length: ' . strlen($jsonData)
-    ));
-    $result = curl_exec($ch);
-    $err = curl_error($ch);
-    $result = json_decode($result, true);
-    curl_close($ch);
-    if ($err) {
-      echo "cURL Error #:" . $err;
-      die();
-    } else {
-      if ($result["Status"] == 100) {
-        header('Location: https://www.zarinpal.com/pg/StartPay/' . $result["Authority"]);
+    if ($_POST['first_name'] == 'aaa') {
+      $api = 'c390c2d4b2c777318eaca5866dfc748c';
+      $amount = 10 * $cost;
+      $mobile = $_POST['mobile'];
+      $factorNumber = $wpdb->insert_id;
+      $description = "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان";
+      $redirect = home_url( $wp->request ) . $_SERVER['REQUEST_URI'] . '?order=' . $wpdb->insert_id . '&payir=1';
+      $result = payir_send($api, $amount, $redirect, $mobile, $factorNumber, $description);
+      $result = json_decode($result);
+      if($result->status) {
+        $go = "https://pay.ir/pg/$result->token";
+        header("Location: $go");
       } else {
-        echo'ERR: ' . $result["Status"];
+        echo $result->errorMessage;
+      }
+    }else{
+      $jsonData = json_encode(array(
+        'MerchantID' => '68f32bf2-ee3e-11e8-a3bb-005056a205be',
+        'Amount' => $cost,
+        'CallbackURL' => home_url( $wp->request ) . $_SERVER['REQUEST_URI'] . '?order=' . $wpdb->insert_id,
+        'Description'  => "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان"
+      ));
+      $ch = curl_init('https://www.zarinpal.com/pg/rest/WebGate/PaymentRequest.json');
+      curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
+      curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen($jsonData)
+      ));
+      $result = curl_exec($ch);
+      $err = curl_error($ch);
+      $result = json_decode($result, true);
+      curl_close($ch);
+      if ($err) {
+        echo "cURL Error #:" . $err;
         die();
+      } else {
+        if ($result["Status"] == 100) {
+          header('Location: https://www.zarinpal.com/pg/StartPay/' . $result["Authority"]);
+        } else {
+          echo'ERR: ' . $result["Status"];
+          die();
+        }
       }
     }
   }
@@ -440,5 +458,84 @@ function sendSms($Code, $MobileNumber){
 		$result = false;
 	}
 	return $result;
+}
+
+
+
+
+
+
+
+
+function payir_send($api, $amount, $redirect, $mobile = null, $factorNumber = null, $description = null) {
+	return payir_curl_post('https://pay.ir/pg/send', [
+		'api'          => $api,
+		'amount'       => $amount,
+		'redirect'     => $redirect,
+		'mobile'       => $mobile,
+		'factorNumber' => $factorNumber,
+		'description'  => $description,
+	]);
+}
+function payir_verify() {
+	$result = payir_curl_post('https://pay.ir/pg/verify', [
+		'api' 	=> 'c390c2d4b2c777318eaca5866dfc748c',
+		'token' => $_GET['token'],
+  ]);
+  $result = json_decode($result);
+  if($result->status){
+    if ($result->status == 1) {
+      global $wpdb;
+      $order = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_orders where id = {$result->factorNumber}", ARRAY_A );
+      if (!$order['payment_code']) {
+        $wpdb->update(
+          $wpdb->prefix . 'hooramat_sale_orders',
+          array(
+            'payment_time' => date('Y-m-d H:i:s'),
+            'payment_code' => $result->transId
+          ),
+          array ('id' => $result->factorNumber)
+        );
+        $ids = implode( array_keys( unserialize($order['services']) ), ', ' );
+        $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where id IN ({$ids})", OBJECT );
+        foreach ($services as $service) {
+          $wpdb->update(
+            $wpdb->prefix . 'hooramat_sale_services',
+            array('total' => $service->total - 1),
+            array ('id' => $service->id )
+          );
+        }
+        sendSms($order['code'], $order['mobile']);
+      }
+      ?>
+        <br><br><br>
+        <div class="">
+          <p class="title ">خرید شما موفق بود. کد پیگیری خود را به خاطر بسپارید و برای رزرو وقت با کلینیک تماس بگیرید.</p>
+          <h2 class="display-2">کد پیگیری: <?= $order['code'] ?></h2>
+        </div>
+        <br><br><br>
+      <?php
+      // echo 'Transation successssss. RefID:' . $result['RefID'];
+    } else {
+      echo 'Transation failed. Status:' . $result['Status'];
+    }
+  } else {
+    echo $result->errorCode . ' - ' . $result->errorMessage;
+  }
+}
+function payir_curl_post($url, $params)
+{
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_HTTPHEADER, [
+		'Content-Type: application/json',
+	]);
+	$res = curl_exec($ch);
+	curl_close($ch);
+	return $res;
 }
 ?>
