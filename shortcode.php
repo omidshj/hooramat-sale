@@ -1,10 +1,14 @@
 <?php
+require_once(__DIR__ .'/MellatBank.php');
+
 function hooramat_sale_shortcode( $atts ) {
   if (empty($atts['sale'])) return 'bad request';
   if (!empty($_GET['Authority']) && !empty($_GET['Status']) ) {
     return hooramat_sale_payment_success();
   } else if (!empty($_GET['payir'])) {
     payir_verify();
+  } else if (!empty ($_GET['(ResCode']) && !empty ($_GET['(RefId'])) {
+    mellat_verify();
   } else if (!empty($_POST['services']) && !empty($_POST['first_name']) && !empty($_POST['last_name']) && !empty($_POST['mobile']) && !empty($_POST['area']) ) {
     return hooramat_sale_preview($atts);
   }else {
@@ -110,6 +114,11 @@ function hooramat_sale_show_table($atts){
           <label class="title ">کد تخفیف:</label>
           <input name="coupon" type="text" class="validate" value="<?= $_POST['coupon'] ?? '' ?>">
         </div>
+        <div class="input-fieldx col s6 right-align">
+          <label><input class="with-gap" name="payment_method" type="radio" value="mellat" /><span>بانک ملت</span></label>
+          <label><input class="with-gap" name="payment_method" type="radio" value="zarinpal"/><span>زرین پال</span></label>
+          <label><input class="with-gap" name="payment_method" type="radio" value="paypal" /><span>پی پال</span></label><br>
+        </div>
       </div>
       <input type="submit" name="" value="ثبت درخواست">
       <br><br><br><br><br><br><br>
@@ -191,6 +200,9 @@ function hooramat_sale_preview($atts){
       </p>
       <p class="col s6 title ">
         محدوده محل سکونت: <?= $_POST['area'] ?> <input type="hidden" name="area" value="<?= $_POST['area'] ?>">
+      </p>
+      <p class="col s6 title ">
+        نوع پرداخت: <?= $_POST['payment_method'] ?> <input type="hidden" name="payment_method" value="<?= $_POST['payment_method'] ?>">
       </p>
       <?php if(!empty($coupon)): ?>
         <p class="col s6 title ">
@@ -275,23 +287,30 @@ add_action('wp_loaded', function(){
       ),
       array ('id' => $wpdb->insert_id)
     );
-
-    if ($_POST['first_name'] == 'aaa') {
-      $api = 'c390c2d4b2c777318eaca5866dfc748c';
-      $amount = 10 * $cost;
-      $mobile = $_POST['mobile'];
-      $factorNumber = $wpdb->insert_id;
-      $description = "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان";
-      $redirect = home_url( $wp->request ) . $_SERVER['REQUEST_URI'] . '?order=' . $wpdb->insert_id . '&payir=1';
-      $result = payir_send($api, $amount, $redirect, $mobile, $factorNumber, $description);
-      $result = json_decode($result);
-      if($result->status) {
-        $go = "https://pay.ir/pg/$result->token";
-        header("Location: $go");
-      } else {
-        echo $result->errorMessage;
+    if ($_POST['payment_method'] == 'mellat'){
+      
+      $terminalId = 4798462;
+		  $userName = 'pkh8176';
+      $userPassword = '43195682';
+      $callBackUrl = home_url( $wp->request ) . $_SERVER['REQUEST_URI'] . '?order=' . $wpdb->insert_id;
+      $amount = $cost;
+      $mellat = new MellatBank($terminalId, $userName, $userPassword);
+      $mellat->startPayment($amount, $callBackUrl);
+      $results = $mellat->checkPayment($_POST);
+      echo "pppp";
+      print_r($result);
+      die;
+      if($results['status']=='success') {
+        # تراکنش با موفقیت انجام شده است.
+        echo $results['trans'] ; # شماره تراکنش
       }
-    }else{
+      else {
+        # تراکنش موفق نبوده است .
+        echo "ffffff";
+        die(var_dum($results));
+      }
+    }
+    elseif (($_POST['payment_method'] == 'zarinpal')){
       $jsonData = json_encode(array(
         'MerchantID' => '68f32bf2-ee3e-11e8-a3bb-005056a205be',
         'Amount' => $cost,
@@ -321,6 +340,24 @@ add_action('wp_loaded', function(){
           echo'ERR: ' . $result["Status"];
           die();
         }
+      }
+    }
+    elseif (($_POST['payment_method'] == 'paypal')){
+      $api = 'c390c2d4b2c777318eaca5866dfc748c';
+      $amount = 10 * $cost;
+      $mobile = $_POST['mobile'];
+      $factorNumber = $wpdb->insert_id;
+      $description = "سفارش {$_POST['first_name']} {$_POST['last_name']} در {$group['name']} به مبلغ {$cost} تومان";
+      $redirect = home_url( $wp->request ) . $_SERVER['REQUEST_URI'] . '?order=' . $wpdb->insert_id . '&payir=1';
+      print_r($redirect);
+      die;
+      $result = payir_send($api, $amount, $redirect, $mobile, $factorNumber, $description);
+      $result = json_decode($result);
+      if($result->status) {
+        $go = "https://pay.ir/pg/$result->token";
+        header("Location: $go");
+      } else {
+        echo $result->errorMessage;
       }
     }
   }
@@ -386,8 +423,6 @@ function hooramat_sale_payment_success(){
 
   <?php
 }
-
-
 
 function getSmsIrToken(){
 	$postData = array(
@@ -459,13 +494,6 @@ function sendSms($Code, $MobileNumber){
 	}
 	return $result;
 }
-
-
-
-
-
-
-
 
 function payir_send($api, $amount, $redirect, $mobile = null, $factorNumber = null, $description = null) {
 	return payir_curl_post('https://pay.ir/pg/send', [
