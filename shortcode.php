@@ -18,129 +18,12 @@ function hooramat_sale_shortcode( $atts ) {
         !empty($_POST['area']) ) {
         return hooramat_sale_preview($atts);
     } else {
+		    require_once(__DIR__ .'/show-offers.php');
         return hooramat_sale_show_table($atts);
     }
 }
 add_shortcode('hooramat_sale', 'hooramat_sale_shortcode');
 
-function hooramat_sale_show_table($atts){
-    global $wpdb;
-    $group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}hooramat_sale_groups where id = {$atts['sale']}", ARRAY_A );
-    $services = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}hooramat_sale_services where group_id={$atts['sale']}", OBJECT );
-    usort($services, function($a, $b){return $a->sort > $b->sort;});
-    if (empty($group) || empty($services)) return 'bad request';
-    date_default_timezone_set("Asia/Tehran");
-    $now = date(time());
-    $start = strtotime($group['start']);
-    $finish = strtotime($group['finish']);
-    $time = $start < $now && $now < $finish;
-    ?>
-    <div class="container medium">
-        <form class="white padding radius margin-top-double margin-bottom-double" method="post" style="box-shadow: 0 2px 10px 0 rgba(0, 0,0, 0.6) !important;border-radius: 20px !important;">
-            <?php if (!$time):
-                $diff = $start - $now;
-                $hour = floor($diff / (60*60));
-                $minute = floor(($diff % (60*60)) / (60));
-                $second = floor(($diff % 60));
-            ?>
-                <div class="remaining-time "  style="text-align: center;">
-                    <p class="headline margin-0" style="text-align: center;">
-                        <span class="second"><?= $second;?></span><span > : </span>
-                        <span class="minute"><?= $minute;?></span><span > : </span>
-                        <span class="hour"><?= $hour ?></span>
-                    </p>
-                    <p class="title margin-0 " style="text-align: center;">مانده تا آغاز حراج</p>
-                </div>
-            <?php endif; ?>
-            <style>
-                th, td {padding: 3px 8px !important; }
-                body.rtl [type="radio"]:not(:checked) + label, body.rtl [type="radio"]:checked + label, body.rtl [type="checkbox"] + label{ padding-right: 0 !important; }
-            </style>
-            <table class="bordered">
-                <thead>
-                    <tr>
-                        <?php if ($time): ?><th style="width: 40px;"></th><?php endif; ?>
-                        <th>عنوان</th>
-                        <th style="width: 80px;">قیمت</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($services as $service): ?>
-                        <tr>
-                            <?php if ($time): ?>
-                                <td>
-                                    <?php if ($service->total > 0): ?>
-                                        <input class="sale-price" sale="<?= $service->sale ?>" type="checkbox" id="service<?= $service->id ?>" name="services[<?= $service->id ?>][count]" value=1 <?= !empty($_POST['services'][$service->id]['count'])? 'checked': '' ?>  />
-                                        <label for="service<?= $service->id ?>"></label>
-                                    <?php else: ?>
-                                        تمام
-                                    <?php endif; ?>
-                                </td>
-                            <?php endif; ?>
-                            <td>
-                                <div class="title "><?= $service->name ?></div> <?= $service->description ?>
-                            </td>
-                            <td style="">
-                                <div style="text-decoration: line-through;"><?= number_format($service->price) ?></div>
-                                <span class="title" style="font-weight: 600; color: #e22020" ><?= number_format($service->sale) ?></span>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    <?php if ($time): ?>
-                        <tr>
-                            <th></th>
-                            <th>جمع</th>
-                            <th class="services-cost">0</th>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-            <br><br>
-            <?php if ($time): ?>
-                <br>
-                <div class="row">
-                    <div class="input-fieldx col m6 s12 right-align">
-                        <label class="title ">نام مادر:</label>
-                        <input name="first_name" type="text" class="validate" value="<?= $_POST['first_name'] ?? '' ?>">
-                    </div>
-                    <div class="input-fieldx col m6 s12 right-align">
-                        <label class="title ">نام خانوادگی مادر:</label>
-                        <input name="last_name" type="text" class="validate" value="<?= $_POST['last_name'] ?? '' ?>">
-                    </div>
-                    <div class="col s12"><br></div>
-                    <div class="input-fieldx col m6 s12 right-align">
-                        <label class="title ">شماره تلفن:</label>
-                        <input name="mobile" type="text" class="validate" value="<?= $_POST['mobile'] ?? '' ?>">
-                    </div>
-                    <div class="input-fieldx col m6 s12 right-align">
-                        <label class="title ">محدوده محل سکونت:</label>
-                        <input name="area" type="text" class="validate" value="<?= $_POST['area'] ?? '' ?>">
-                    </div>
-                    <div class="input-fieldx col m6 s12 right-align">
-                        <label class="title ">کد تخفیف:</label>
-                        <input name="coupon" type="text" class="validate" value="<?= $_POST['coupon'] ?? '' ?>">
-                    </div>
-                </div>
-                <input type="submit" name="" value="ثبت درخواست">
-                <br><br><br><br><br><br><br>
-            <?php endif; ?>
-        </form>
-	</div>
-    <script type="text/javascript">
-        jQuery(document).ready(function(){
-            servicesCost();
-            jQuery('.sale-price').change(servicesCost);
-            function servicesCost(){
-                var c = 0;
-                jQuery('.sale-price').each(function(){
-                    if ( jQuery(this).is(":checked") ) c += parseInt( jQuery(this).attr('sale') );
-                });
-                jQuery('.services-cost').html(c);
-            }
-        });
-    </script>
-    <?php
-}
 
 function hooramat_sale_preview($atts){
   global $wpdb;
@@ -220,10 +103,17 @@ function hooramat_sale_preview($atts){
       <?php endif; ?>
       <div class="input-fieldx col m6 s12 right-align">
           <label class="title ">روش پرداخت:</label>
-          <div>
-            <label class="body-2"><input class="with-gap" name="payment_method" type="radio" value="mellat" checked /><span>بانک ملت</span></label>
-            <label class="body-2"><input class="with-gap" name="payment_method" type="radio" value="zarinpal"/><span>زرین پال</span></label>
-          </div>
+          
+			  
+			    <div class="input-field col s12">
+    <select name="payment_method">
+      <option value="" disabled selected>Choose your option</option>
+      <option value="mellat">mellat</option>
+      <option value="zarinpal">zarinpal</option>
+    </select>
+    <label>روش پرداخت</label>
+  </div>
+
       </div>
     </div>
     <br>
@@ -243,7 +133,7 @@ add_action('wp_loaded', function(){
     !empty($_POST['payment_method'])
   ){
     $order  = hooramat_order_save();
-    
+
     switch ($_POST['payment_method']) {
       case 'mellat':
         hooramat_mellat_redirect($order);

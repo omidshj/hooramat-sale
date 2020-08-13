@@ -42,6 +42,8 @@ function hooramat_sale_activation() {
                 total mediumint(9),
                 price mediumint(9),
                 sale mediumint(9),
+                sort mediumint(9) NULL,
+                media int(11) NULL,
                 PRIMARY KEY (id)
             ) $charset_collate;
     
